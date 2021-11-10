@@ -638,7 +638,7 @@ X<-dat10c %>% select (!response)
 table(X$bmi_class)
 X<- X%>% mutate_if(is.numeric, list(mystd))
 #OPTION 1 RFE
-selected<-c("age","waist_circumference","bmi","systolic_pressure", "weekly_vigorous_activity","smoking" , "grain","diastolic_pressure","sex","meat_and_pou","vegetable","unsaturated_spreads_oils","water")
+selected<-c("age","waist_circumference","bmi","systolic_pressure", "weekly_vigorous_activity","smoking" ,"meat_and_pou","dairy","caffine", "grain","diastolic_pressure","sex","meat_and_pou","vegetable","unsaturated_spreads_oils","water")
 X<-X%>% select(selected)
 y<-Y$CVD_cat_fac # y is binary class
 temp_dat_opt1<-cbind(y,X) # construct temp dataset for analysis
@@ -701,7 +701,7 @@ for (r in 1:repeat_number){
     model.name.list[[index]] = c(index, r, i, "robust")
     model.list[[index]] = model.lr
     hyper.list[[index]] = NULL
-    performance.list[[index]]=c(err.lr.train, err.lr, f1.lr, ber.lr, auc.lr)
+    performance.list[[index]]=c(0, err.lr, f1.lr, ber.lr, auc.lr)
     index=index+1
 
     # ridge regression
@@ -730,50 +730,9 @@ for (r in 1:repeat_number){
     index=index+1
     
 
-    # classification tree using gini
-    caret.control<-trainControl(
-      method="repeatedcv",
-      number=10,
-      repeats=2
-    )
-    caret.model<-train(
-      y~.,
-      data=fold_train,
-      method="rpart",
-      trControl=caret.control,
-      tuneLength=100
-    )
-    # using above-obtaiend cp value for fitting classfication tree  
-    model <- rpart(y~.,
-                  data=fold_train,
-                  parms=list(split="gini"),
-                  control=rpart.control(cp=caret.model$bestTune)
-    )
-    # training error
-    pred.train<-predict(model, newdata=fold_train, type="prob")
-    class.train<-as.numeric(pred.train[,2]>0.5)
-    err.train<-mean(as.numeric(class.train!=fold_train$y))
-    # testing error
-    pred<-predict(model, newdata=fold_test, type="prob") # this gives probability of 2 classes
-    class<-as.numeric(pred[,2]>0.5)
-    t<-table(class, fold_test$y)
-    if (nrow(t)<2){
-      t<-rbind(t,c(0,0))
-    }
-    t<-t[2:1,2:1]
-    err<-mean(as.numeric(class!=fold_test$y))
-    f1<-calculate_f1(t)
-    ber<-calculate_ber(t)
-    auc<-roc(fold_test$y, class)$auc
-    ## record results
-    model.name.list[[index]]=c(index, r, i, "cls_tre_gini")
-    model.list[[index]]=model
-    performance.list[[index]]=c(err.train, err,f1,ber, auc)
-    hyper.list[[index]]=c(caret.model$bestTune)
-    index=index+1
    
     # random forest
-    grid.rf <- list(ntrees = seq(500, 1000, by = 500), # number of trees
+    grid.rf <- list(ntrees = seq(1500, 2000, by = 500), # number of trees
                      mtries = seq(5) 
                 )
 
